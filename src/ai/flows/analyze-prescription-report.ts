@@ -55,7 +55,7 @@ Prescription:
 Please provide the output in a structured JSON format matching the following schema. Ensure the 'medicationSchedule' is formatted as a markdown table.
 
 Example Output (English):
-\`\`\`json
+\\\`\\\`\\\`json
 {
   "summary": "Prescription for common cold with antibiotics.",
   "diagnosis": "The prescription indicates a common cold, likely with a bacterial co-infection given the antibiotic.",
@@ -63,10 +63,10 @@ Example Output (English):
   "sideEffects": "Amoxicillin may cause nausea, diarrhea, or rash. Paracetamol rarely causes side effects at recommended doses, but overdose can cause liver damage.",
   "followUpChecklist": "- Complete the full course of antibiotics.\\n- Drink plenty of fluids.\\n- Rest adequately.\\n- Consult a doctor if symptoms worsen or persist after 7 days."
 }
-\`\`\`
+\\\`\\\`\\\`
 
 Example Output (Hindi):
-\`\`\`json
+\\\`\\\`\\\`json
 {
   "summary": "सामान्य सर्दी और एंटीबायोटिक्स के लिए एक नुस्खा।",
   "diagnosis": "यह नुस्खा सामान्य सर्दी का संकेत देता है, एंटीबायोटिक के उपयोग को देखते हुए संभवतः जीवाणु संक्रमण के साथ।",
@@ -74,7 +74,7 @@ Example Output (Hindi):
   "sideEffects": "एमोक्सिसिलिन से मतली, दस्त या दाने हो सकते हैं। पैरासिटामोल अनुशंसित खुराक पर शायद ही कभी दुष्प्रभाव पैदा करता है, लेकिन अधिक खुराक से लीवर को नुकसान हो सकता है।",
   "followUpChecklist": "- एंटीबायोटिक दवाओं का पूरा कोर्स पूरा करें।\\n- खूब सारे तरल पदार्थ पिएं।\\n- पर्याप्त आराम करें।\\n- यदि लक्षण बिगड़ते हैं या 7 दिनों के बाद भी बने रहते हैं तो डॉक्टर से सलाह लें।"
 }
-\`\`\`
+\\\`\\\`\\\`
 
 Your response MUST be a JSON object conforming to the schema.
 `,
