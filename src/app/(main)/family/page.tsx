@@ -9,8 +9,8 @@ import { UserPlus } from "lucide-react";
 
 const familyMembers = [
   { name: "You", relation: "Self", image: "4" },
-  { name: "Aarav Singh", relation: "Father", image: "5" },
-  { name: "Priya Singh", relation: "Mother", image: "6" },
+  { name: "Father", relation: "Father", image: "5" },
+  { name: "Mother", relation: "Mother", image: "6" },
 ];
 
 export default function FamilyPage() {
