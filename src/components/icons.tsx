@@ -32,7 +32,7 @@ export const Logo = () => {
           strokeLinejoin="round"
         />
       </svg>
-      <span className="font-bold text-xl text-foreground">MediCare</span>
+      <span className="font-bold text-xl text-foreground">MediCare AI</span>
     </div>
   );
 };
