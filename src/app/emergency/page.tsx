@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
@@ -10,7 +10,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
-import { AlertTriangle, Copy, Headphones, Loader2, MessageSquare, Send, Siren, Phone } from 'lucide-react';
+import { AlertTriangle, Copy, Headphones, Loader2, MessageSquare, Send, Siren, Phone, Mic, MicOff } from 'lucide-react';
 import Link from 'next/link';
 
 const formSchema = z.object({
@@ -21,11 +21,59 @@ export default function EmergencyPage() {
   const [guidance, setGuidance] = useState<EmergencyGuidanceOutput | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
+  const [isRecording, setIsRecording] = useState(false);
+  const recognitionRef = useRef<any>(null);
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: { emergencyDescription: "" },
   });
+
+  useEffect(() => {
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SpeechRecognition) {
+      console.warn("Speech recognition not supported in this browser.");
+      return;
+    }
+
+    const recognition = new SpeechRecognition();
+    recognition.continuous = false;
+    recognition.interimResults = false;
+    recognition.lang = 'en-US';
+
+    recognition.onresult = (event) => {
+      const transcript = event.results[0][0].transcript;
+      form.setValue("emergencyDescription", transcript);
+    };
+
+    recognition.onend = () => {
+      setIsRecording(false);
+    };
+
+    recognition.onerror = (event) => {
+      console.error("Speech recognition error", event.error);
+      toast({
+        variant: "destructive",
+        title: "Voice Recognition Error",
+        description: event.error === 'not-allowed' ? "Microphone access was denied." : "An error occurred during voice recognition.",
+      });
+      setIsRecording(false);
+    };
+    
+    recognitionRef.current = recognition;
+  }, [form, toast]);
+
+  const toggleRecording = () => {
+    if (!recognitionRef.current) return;
+
+    if (isRecording) {
+      recognitionRef.current.stop();
+    } else {
+      form.setValue("emergencyDescription", ""); 
+      recognitionRef.current.start();
+      setIsRecording(true);
+    }
+  };
 
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
     setIsLoading(true);
@@ -79,10 +127,16 @@ export default function EmergencyPage() {
                   name="emergencyDescription"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel className="text-lg">Describe the Situation</FormLabel>
+                      <div className="flex justify-between items-center">
+                        <FormLabel className="text-lg">Describe the Situation</FormLabel>
+                        <Button type="button" variant="ghost" size="icon" onClick={toggleRecording} className="text-foreground/70 hover:text-foreground disabled:opacity-50" disabled={!recognitionRef.current}>
+                            {isRecording ? <MicOff className="h-5 w-5 text-destructive" /> : <Mic className="h-5 w-5" />}
+                            <span className="sr-only">{isRecording ? 'Stop recording' : 'Start recording'}</span>
+                        </Button>
+                      </div>
                       <FormControl>
                         <Textarea
-                          placeholder="e.g., 'My father has chest pain and is having trouble breathing.'"
+                          placeholder={isRecording ? "Listening..." : "e.g., 'My father has chest pain and is having trouble breathing.'"}
                           className="min-h-[120px] text-base"
                           {...field}
                         />
