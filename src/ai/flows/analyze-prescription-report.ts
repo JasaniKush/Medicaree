@@ -3,6 +3,7 @@
  * @fileOverview This file implements a Genkit flow to analyze prescription images or PDFs.
  * It processes the input to generate a comprehensive report including a summary, diagnosis,
  * medication schedule, potential side effects, and a follow-up checklist in the user's preferred language.
+ * It also generates an audio summary of the report.
  *
  * - analyzePrescriptionReport - The main function to trigger the prescription analysis.
  * - AnalyzePrescriptionReportInput - The input type for the analysis function.
@@ -11,6 +12,8 @@
 
 import { ai } from '@/ai/genkit';
 import { z } from 'genkit';
+import { googleAI } from '@genkit-ai/google-genai';
+import * as wav from 'wav';
 
 const AnalyzePrescriptionReportInputSchema = z.object({
   prescriptionDataUri: z
@@ -18,23 +21,31 @@ const AnalyzePrescriptionReportInputSchema = z.object({
     .describe(
       "A photo or PDF of a prescription, as a data URI that must include a MIME type and use Base64 encoding. Expected format: 'data:<mimetype>;base64,<encoded_data>'. Supported mimetypes include image/jpeg, image/png, image/webp, application/pdf."
     ),
-  language: z.enum(['en', 'hi']).describe("The desired output language for the report. 'en' for English, 'hi' for Hindi."),
+  language: z
+    .enum(['en', 'hi', 'gu'])
+    .describe(
+      "The desired output language for the report. 'en' for English, 'hi' for Hindi, 'gu' for Gujarati."
+    ),
+  age: z.number().optional().describe('The age of the person this prescription is for.'),
 });
 
 export type AnalyzePrescriptionReportInput = z.infer<typeof AnalyzePrescriptionReportInputSchema>;
 
 const AnalyzePrescriptionReportOutputSchema = z.object({
-  summary: z.string().describe("A concise one-line summary of the prescription."),
-  diagnosis: z.string().describe("A plain-language explanation of the diagnosed condition."),
+  summary: z.string().describe('A concise one-line summary of the prescription.'),
+  diagnosis: z.string().describe('A plain-language explanation of the diagnosed condition.'),
   medicationSchedule: z
     .string()
     .describe(
-      "A medication schedule presented as a markdown table, including medication names, dosages, frequencies, and durations. Example: | Medication | Dosage | Frequency | Duration |\\n|---|---|---|---|\\n| Amoxicillin | 500mg | Twice daily | 7 days |"
+      'A medication schedule presented as a markdown table, including medication names, dosages, frequencies, and durations. Example: | Medication | Dosage | Frequency | Duration |\\n|---|---|---|---|\\n| Amoxicillin | 500mg | Twice daily | 7 days |'
     ),
-  sideEffects: z.string().describe("Potential side effects of the prescribed medications."),
+  sideEffects: z.string().describe('Potential side effects of the prescribed medications.'),
   followUpChecklist: z
     .string()
-    .describe("A checklist of recommended follow-up actions or precautions."),
+    .describe('A checklist of recommended follow-up actions or precautions.'),
+  summaryAudio: z
+    .string()
+    .describe('Data URI of the audio representation of the summary (WAV format).'),
 });
 
 export type AnalyzePrescriptionReportOutput = z.infer<typeof AnalyzePrescriptionReportOutputSchema>;
@@ -42,10 +53,16 @@ export type AnalyzePrescriptionReportOutput = z.infer<typeof AnalyzePrescription
 const analyzePrescriptionReportPrompt = ai.definePrompt({
   name: 'analyzePrescriptionReportPrompt',
   input: { schema: AnalyzePrescriptionReportInputSchema },
-  output: { schema: AnalyzePrescriptionReportOutputSchema },
+  // Manually define the output schema for the text part only for this prompt
+  output: {
+    schema: AnalyzePrescriptionReportOutputSchema.omit({ summaryAudio: true }),
+  },
   prompt: `You are an AI assistant designed to analyze medical prescriptions and provide clear, comprehensive reports.
 
 Your task is to analyze the provided prescription (image or PDF) and generate a detailed report in JSON format. The report should include a one-line summary, a plain-language diagnosis, a medication schedule as a markdown table, potential side effects, and a follow-up checklist.
+{{#if age}}
+The prescription is for a {{age}}-year-old patient. Please take this into account during your analysis.
+{{/if}}
 
 Translate all output fields into the requested language: {{{language}}}.
 
@@ -87,14 +104,80 @@ const analyzePrescriptionReportFlow = ai.defineFlow(
     outputSchema: AnalyzePrescriptionReportOutputSchema,
   },
   async (input) => {
-    const { output } = await analyzePrescriptionReportPrompt(input);
-    if (!output) {
+    // 1. Get text report
+    const { output: textOutput } = await analyzePrescriptionReportPrompt(input);
+    if (!textOutput) {
       throw new Error('Failed to generate prescription report.');
     }
-    return output;
+
+    // 2. Get summary text
+    const summaryText = textOutput.summary;
+
+    // 3. Generate audio for the summary
+    const { media } = await ai.generate({
+      model: googleAI.model('gemini-2.5-flash-preview-tts'),
+      config: {
+        responseModalities: ['AUDIO'],
+        speechConfig: {
+          voiceConfig: {
+            prebuiltVoiceConfig: { voiceName: 'Algenib' }, // Default voice, language auto-detected by TTS model
+          },
+        },
+      },
+      prompt: summaryText,
+    });
+
+    if (!media || !media.url) {
+      throw new Error('No audio media returned from TTS.');
+    }
+
+    // 4. Convert PCM to WAV
+    const audioBuffer = Buffer.from(
+      media.url.substring(media.url.indexOf(',') + 1),
+      'base64'
+    );
+    const audioWavBase64 = await toWav(audioBuffer);
+
+    // 5. Return combined output
+    return {
+      ...textOutput,
+      summaryAudio: 'data:audio/wav;base64,' + audioWavBase64,
+    };
   }
 );
 
-export async function analyzePrescriptionReport(input: AnalyzePrescriptionReportInput): Promise<AnalyzePrescriptionReportOutput> {
+export async function analyzePrescriptionReport(
+  input: AnalyzePrescriptionReportInput
+): Promise<AnalyzePrescriptionReportOutput> {
   return analyzePrescriptionReportFlow(input);
+}
+
+/**
+ * Helper function to convert raw PCM audio data to WAV format.
+ */
+async function toWav(
+  pcmData: Buffer,
+  channels = 1,
+  rate = 24000,
+  sampleWidth = 2
+): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const writer = new wav.Writer({
+      channels,
+      sampleRate: rate,
+      bitDepth: sampleWidth * 8,
+    });
+
+    const bufs: any[] = [];
+    writer.on('error', reject);
+    writer.on('data', function (d) {
+      bufs.push(d);
+    });
+    writer.on('end', function () {
+      resolve(Buffer.concat(bufs).toString('base64'));
+    });
+
+    writer.write(pcmData);
+    writer.end();
+  });
 }

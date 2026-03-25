@@ -4,7 +4,7 @@ import type { AnalyzePrescriptionReportOutput } from "@/ai/flows/analyze-prescri
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { CheckCircle, Info, List, Pill, AlertTriangle, FileText } from "lucide-react";
+import { CheckCircle, Info, List, Pill, AlertTriangle, FileText, Volume2 } from "lucide-react";
 
 type ReportDisplayProps = {
   report: AnalyzePrescriptionReportOutput;
@@ -26,7 +26,7 @@ const parseMarkdownTable = (markdown: string): { headers: string[]; rows: string
 
 
 export function ReportDisplay({ report }: ReportDisplayProps) {
-  const { summary, diagnosis, medicationSchedule, sideEffects, followUpChecklist } = report;
+  const { summary, diagnosis, medicationSchedule, sideEffects, followUpChecklist, summaryAudio } = report;
   const { headers: medHeaders, rows: medRows } = parseMarkdownTable(medicationSchedule);
 
   return (
@@ -41,6 +41,17 @@ export function ReportDisplay({ report }: ReportDisplayProps) {
         </CardHeader>
         <CardContent>
           <p className="text-lg">{summary}</p>
+          {summaryAudio && (
+            <div className="mt-4">
+               <div className="flex items-center gap-2 mb-2 text-sm font-medium text-muted-foreground">
+                 <Volume2 className="h-4 w-4" />
+                 <span>Audio Summary</span>
+               </div>
+               <audio controls src={summaryAudio} className="w-full h-10">
+                  Your browser does not support the audio element.
+              </audio>
+            </div>
+          )}
         </CardContent>
       </Card>
       

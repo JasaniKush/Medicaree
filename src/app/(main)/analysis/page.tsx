@@ -7,14 +7,16 @@ import { useToast } from "@/hooks/use-toast";
 import { ProcessingLoader } from '@/components/processing-loader';
 import { ReportDisplay } from '@/components/report-display';
 import { Button } from '@/components/ui/button';
-import { Save, Languages } from 'lucide-react';
+import { Save } from 'lucide-react';
 import { useLocalStorage } from '@/hooks/use-local-storage';
 import { AiAssistant } from '@/components/ai-assistant';
 import { Card, CardContent } from '@/components/ui/card';
 import { Header } from '@/components/header';
 import type { StoredReport } from '@/lib/types';
+import { Input } from '@/components/ui/input';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
-type Language = "en" | "hi";
+type Language = "en" | "hi" | "gu";
 
 export default function AnalysisPage() {
   const router = useRouter();
@@ -22,6 +24,7 @@ export default function AnalysisPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [report, setReport] = useState<AnalyzePrescriptionReportOutput | null>(null);
   const [language, setLanguage] = useState<Language>("en");
+  const [age, setAge] = useState<string>('');
   const [prescriptionDataUri, setPrescriptionDataUri] = useState<string | null>(null);
   const [locker, setLocker] = useLocalStorage<StoredReport[]>("health-locker", []);
 
@@ -37,7 +40,11 @@ export default function AnalysisPage() {
   useEffect(() => {
     if (prescriptionDataUri) {
       setIsLoading(true);
-      analyzePrescriptionReport({ prescriptionDataUri, language })
+      analyzePrescriptionReport({ 
+        prescriptionDataUri, 
+        language, 
+        age: age ? parseInt(age, 10) : undefined 
+      })
         .then(setReport)
         .catch(err => {
           console.error(err);
@@ -50,7 +57,7 @@ export default function AnalysisPage() {
         })
         .finally(() => setIsLoading(false));
     }
-  }, [prescriptionDataUri, language, toast, router]);
+  }, [prescriptionDataUri, language, age, toast, router]);
 
   const handleSaveToLocker = () => {
     if (report) {
@@ -76,10 +83,6 @@ export default function AnalysisPage() {
     }
   };
   
-  const toggleLanguage = () => {
-    setLanguage(prev => (prev === "en" ? "hi" : "en"));
-  };
-
   const assistantData = useMemo(() => {
     if (!report) return null;
     return {
@@ -100,14 +103,27 @@ export default function AnalysisPage() {
           <>
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
               <h1 className="text-3xl font-bold tracking-tight font-headline">Analysis Report</h1>
-              <div className="flex gap-2">
-                <Button variant="outline" onClick={toggleLanguage}>
-                  <Languages className="mr-2 h-4 w-4" />
-                  {language === 'en' ? 'Switch to Hindi' : 'Switch to English'}
-                </Button>
+              <div className="flex items-center gap-2">
+                 <Input
+                    type="number"
+                    placeholder="Enter Age"
+                    value={age}
+                    onChange={(e) => setAge(e.target.value)}
+                    className="w-28"
+                  />
+                  <Select value={language} onValueChange={(value) => setLanguage(value as Language)}>
+                      <SelectTrigger className="w-[150px]">
+                          <SelectValue placeholder="Select language" />
+                      </SelectTrigger>
+                      <SelectContent>
+                          <SelectItem value="en">English</SelectItem>
+                          <SelectItem value="hi">Hindi</SelectItem>
+                          <SelectItem value="gu">Gujarati</SelectItem>
+                      </SelectContent>
+                  </Select>
                 <Button onClick={handleSaveToLocker}>
                   <Save className="mr-2 h-4 w-4" />
-                  Save to Locker
+                  Save
                 </Button>
               </div>
             </div>
