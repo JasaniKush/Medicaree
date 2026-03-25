@@ -12,6 +12,7 @@ import { useLocalStorage } from '@/hooks/use-local-storage';
 import { AiAssistant } from '@/components/ai-assistant';
 import { Card, CardContent } from '@/components/ui/card';
 import { Header } from '@/components/header';
+import type { StoredReport } from '@/lib/types';
 
 type Language = "en" | "hi";
 
@@ -22,7 +23,7 @@ export default function AnalysisPage() {
   const [report, setReport] = useState<AnalyzePrescriptionReportOutput | null>(null);
   const [language, setLanguage] = useState<Language>("en");
   const [prescriptionDataUri, setPrescriptionDataUri] = useState<string | null>(null);
-  const [locker, setLocker] = useLocalStorage<AnalyzePrescriptionReportOutput[]>("health-locker", []);
+  const [locker, setLocker] = useLocalStorage<StoredReport[]>("health-locker", []);
 
   useEffect(() => {
     const dataUri = sessionStorage.getItem('prescriptionDataUri');
@@ -55,7 +56,13 @@ export default function AnalysisPage() {
     if (report) {
       // Avoid duplicates
       if (!locker.some(item => item.summary === report.summary)) {
-        setLocker([...locker, { ...report, savedAt: new Date().toISOString() }]);
+        const newReport: StoredReport = {
+          ...report,
+          id: `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+          savedAt: new Date().toISOString(),
+          type: 'prescription'
+        };
+        setLocker([...locker, newReport]);
         toast({
           title: "Saved!",
           description: "Your prescription report has been saved to your Health Locker.",
