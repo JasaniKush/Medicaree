@@ -2,15 +2,15 @@
 
 import { useState, useRef } from 'react';
 import { useRouter } from 'next/navigation';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from '@/components/ui/button';
-import { Upload, Camera, FileText, Loader2 } from 'lucide-react';
+import { Upload, Camera, Loader2 } from 'lucide-react';
 import { useToast } from "@/hooks/use-toast";
+import Link from 'next/link';
 
 export default function HomePage() {
   const router = useRouter();
   const { toast } = useToast();
-  const [isLoading, setIsLoading] = useState< 'upload' | 'camera' | null>(null);
+  const [isLoading, setIsLoading] = useState< 'upload' | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -23,7 +23,7 @@ export default function HomePage() {
     }
   };
 
-  const processFile = (file: File, type: 'upload' | 'camera') => {
+  const processFile = (file: File, type: 'upload') => {
     setIsLoading(type);
     const reader = new FileReader();
     reader.onload = (e) => {
@@ -55,33 +55,28 @@ export default function HomePage() {
     fileInputRef.current?.click();
   };
 
-  const handleCameraClick = () => {
-    toast({
-        title: "Camera Feature",
-        description: "The smart camera feature with auto-capture and blur detection is coming soon!",
-    });
-  };
-
   return (
-    <div className="container mx-auto py-12 px-4">
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-12 items-center min-h-[calc(100vh-12rem)]">
-        <div className="space-y-6">
-          <h1 className="text-4xl md:text-5xl font-bold tracking-tight font-headline text-primary">Your AI Health Companion</h1>
-          <p className="text-lg text-muted-foreground">
-            Instantly analyze prescriptions, get emergency guidance, and manage your health records with the power of AI.
-          </p>
-        </div>
-        <Card className="p-2 sm:p-6 shadow-lg border-2 border-primary/10">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-3 text-2xl">
-              <FileText className="h-8 w-8 text-primary" />
-              Get Started
-            </CardTitle>
-            <CardDescription>
-              Upload a prescription image or PDF to get an instant AI-powered analysis.
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
+    <div className="container mx-auto flex items-center justify-center min-h-screen">
+      <div className="text-center max-w-2xl">
+        <h1 className="text-4xl md:text-5xl font-bold tracking-tight font-headline">Understand Your Prescription Instantly</h1>
+        <p className="text-lg text-muted-foreground mt-4 mb-8">
+          No confusion. Just clear answers.
+        </p>
+        <div className="flex flex-col sm:flex-row gap-4 justify-center">
+            <Button asChild size="lg" className="w-full sm:w-auto">
+                <Link href="/scan">
+                    <Camera className="mr-2 h-5 w-5" />
+                    Scan Prescription
+                </Link>
+            </Button>
+            <Button variant="outline" size="lg" onClick={handleUploadClick} disabled={!!isLoading} className="w-full sm:w-auto">
+              {isLoading === 'upload' ? (
+                <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+              ) : (
+                <Upload className="mr-2 h-5 w-5" />
+              )}
+              Upload File
+            </Button>
             <input
               type="file"
               ref={fileInputRef}
@@ -89,24 +84,7 @@ export default function HomePage() {
               className="hidden"
               accept="image/*,application/pdf"
             />
-            <Button className="w-full" size="lg" onClick={handleUploadClick} disabled={!!isLoading}>
-              {isLoading === 'upload' ? (
-                <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-              ) : (
-                <Upload className="mr-2 h-5 w-5" />
-              )}
-              Upload from Device
-            </Button>
-            <Button className="w-full" variant="outline" size="lg" onClick={handleCameraClick} disabled={!!isLoading}>
-              {isLoading === 'camera' ? (
-                <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-              ) : (
-                <Camera className="mr-2 h-5 w-5" />
-              )}
-              Use Smart Scan
-            </Button>
-          </CardContent>
-        </Card>
+        </div>
       </div>
     </div>
   );
