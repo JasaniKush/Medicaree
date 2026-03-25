@@ -10,7 +10,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
-import { AlertTriangle, Copy, Headphones, Loader2, MessageSquare, Send, Siren } from 'lucide-react';
+import { AlertTriangle, Copy, Headphones, Loader2, MessageSquare, Send, Siren, Phone } from 'lucide-react';
 import Link from 'next/link';
 
 const formSchema = z.object({
@@ -58,12 +58,12 @@ export default function EmergencyPage() {
       <Link href="/" className="absolute top-4 left-4 text-destructive-foreground/80 hover:text-destructive-foreground transition">
         &larr; Back to MediCare Home
       </Link>
-      <Card className="w-full max-w-2xl bg-background/90 text-foreground shadow-2xl">
+      <Card className="w-full max-w-2xl bg-background/95 text-foreground shadow-2xl">
         <CardHeader className="text-center">
             <div className="flex justify-center mb-4">
                 <Siren className="h-12 w-12 text-destructive"/>
             </div>
-          <CardTitle className="text-3xl text-destructive">Emergency Help Mode</CardTitle>
+          <CardTitle className="text-3xl text-destructive">Emergency Help</CardTitle>
           <CardDescription>
             Describe your emergency below for AI-powered immediate guidance.
             <br/>
@@ -82,7 +82,7 @@ export default function EmergencyPage() {
                       <FormLabel className="text-lg">Describe the Situation</FormLabel>
                       <FormControl>
                         <Textarea
-                          placeholder="e.g., 'Someone is unconscious and not breathing', 'I have a deep cut that is bleeding a lot'"
+                          placeholder="e.g., 'My father has chest pain and is having trouble breathing.'"
                           className="min-h-[120px] text-base"
                           {...field}
                         />
@@ -99,13 +99,24 @@ export default function EmergencyPage() {
             </Form>
           ) : (
             <div className="space-y-6">
+                <Button asChild size="lg" className="w-full h-20 text-2xl font-bold bg-red-600 hover:bg-red-700 text-white">
+                  <Link href="tel:108">
+                    <Phone className="mr-4 h-8 w-8" />
+                    CALL 108 NOW
+                  </Link>
+                </Button>
+
                 <Card className="bg-red-100 dark:bg-red-900/50 border-destructive">
                     <CardHeader>
                         <CardTitle className="flex items-center gap-2"><AlertTriangle/>Immediate Advice</CardTitle>
                     </CardHeader>
                     <CardContent>
                         <p className="text-lg font-bold">{guidance.summary}</p>
-                        <p className="mt-2">{guidance.advice}</p>
+                        <div className="mt-2 space-y-1">
+                          {guidance.advice.split('\n').map((line, index) => (
+                            line && <p key={index}>{line.replace(/^- /, '• ')}</p>
+                          ))}
+                        </div>
                     </CardContent>
                 </Card>
 

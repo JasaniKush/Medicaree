@@ -29,7 +29,7 @@ const EmergencyGuidanceOutputSchema = z.object({
   summary: z.string().describe('A one-line summary of the immediate advice.'),
   advice: z
     .string()
-    .describe('Detailed, actionable advice for the emergency situation.'),
+    .describe('A few VERY SHORT bullet points of actionable advice (e.g., "- Call 108 immediately.").'),
   emergencyMessages: z
     .array(z.string())
     .describe(
@@ -51,17 +51,19 @@ const emergencyGuidancePrompt = ai.definePrompt({
   name: 'emergencyGuidancePrompt',
   input: {schema: EmergencyGuidanceInputSchema},
   output: {schema: EmergencyGuidanceOutputSchema},
-  prompt: `You are an AI assistant designed to provide immediate and actionable emergency guidance.
-The user is in an urgent situation and needs rapid assistance.
+  prompt: `You are an AI assistant designed to provide immediate and actionable emergency guidance. The user is in a critical situation.
+Your response MUST be extremely brief and direct. Use short bullet points for the 'advice' field.
+Prioritize safety and immediate actions. Always include advice to call emergency services.
+
 Based on the following description of the emergency and the desired language, provide:
-1. A one-line summary of the immediate advice.
-2. Detailed, actionable advice.
-3. Several short, pre-written emergency messages that the user can quickly send or use to call for help.
+1. A one-line summary of the immediate advice in the 'summary' field.
+2. A few VERY SHORT bullet points of actionable advice in the 'advice' field (e.g., "- Call 108 immediately.", "- Keep patient calm.").
+3. Several short, pre-written emergency messages for the user to send for help in the 'emergencyMessages' field.
 
 Language for output: {{{language}}}
 Emergency Description: {{{emergencyDescription}}}
 
-Ensure the tone is calm, clear, and direct. Prioritize safety and immediate necessary actions.`,
+Ensure the tone is calm, clear, and direct.`,
 });
 
 const emergencyGuidanceFlow = ai.defineFlow(
